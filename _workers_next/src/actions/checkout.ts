@@ -39,7 +39,7 @@ async function autoReplenishByApi(productId: string, reason: string) {
     }
 }
 
-export async function createOrder(productId: string, quantity: number = 1, email?: string, usePoints: boolean = false) {
+export async function createOrder(productId: string, quantity: number = 1, email?: string, usePoints: boolean = false, answers?: string[]) {
     const session = await auth()
     const user = session?.user
     const normalizedQuantity = Number(quantity)
@@ -58,10 +58,29 @@ export async function createOrder(productId: string, quantity: number = 1, email
             name: true,
             price: true,
             purchaseLimit: true,
-            isShared: true
+            isShared: true,
+            purchaseQuestions: true
         }
     })
     if (!product) return { success: false, error: 'buy.productNotFound' }
+
+    if (product.purchaseQuestions) {
+        try {
+            const qs: Array<{ q: string; a: string }> = JSON.parse(product.purchaseQuestions)
+            if (Array.isArray(qs) && qs.length > 0) {
+                if (!answers || answers.length !== qs.length) {
+                    return { success: false, error: 'buy.answersRequired' }
+                }
+                const allCorrect = qs.every((q, i) => {
+                    const userAnswer = (answers[i] || '').trim().toLowerCase()
+                    return userAnswer === q.a.trim().toLowerCase()
+                })
+                if (!allCorrect) {
+                    return { success: false, error: 'buy.questionsWrong' }
+                }
+            }
+        } catch { /* malformed JSON, skip */ }
+    }
 
     const purchaseLimit = product.purchaseLimit && product.purchaseLimit > 0 ? product.purchaseLimit : null
     const maxQuantity = purchaseLimit ?? MAX_ORDER_QUANTITY

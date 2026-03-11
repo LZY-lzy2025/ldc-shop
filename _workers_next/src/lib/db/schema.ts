@@ -24,6 +24,7 @@ export const products = sqliteTable('products', {
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()), // Use integer timestamp (ms)
     variantGroupId: text('variant_group_id'),
     variantLabel: text('variant_label'),
+    purchaseQuestions: text('purchase_questions'),
 });
 
 // Cards (Stock)

@@ -27,6 +27,17 @@ export default function ProductForm({ product, categories = [] }: { product?: an
     const [visibilityLevel, setVisibilityLevel] = useState(String(product?.visibilityLevel ?? -1))
     const [productImageValue, setProductImageValue] = useState(product?.image || '')
     const [processingProductImageFile, setProcessingProductImageFile] = useState(false)
+    const [purchaseQuestions, setPurchaseQuestions] = useState<Array<{ q: string; a: string }>>(() => {
+        try {
+            const raw = product?.purchaseQuestions
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed
+            }
+        } catch { /* ignore */ }
+        return []
+    })
+    const [showQuestions, setShowQuestions] = useState(purchaseQuestions.length > 0)
     const { t } = useI18n()
     const usingUploadedProductImage = productImageValue.startsWith('data:')
     const productImageInputValue = usingUploadedProductImage ? '' : productImageValue
@@ -36,6 +47,25 @@ export default function ProductForm({ product, categories = [] }: { product?: an
         setShowWarning(Boolean(product?.purchaseWarning && String(product.purchaseWarning).trim()))
         setVisibilityLevel(String(product?.visibilityLevel ?? -1))
         setProductImageValue(product?.image || '')
+        try {
+            const raw = product?.purchaseQuestions
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setPurchaseQuestions(parsed)
+                    setShowQuestions(true)
+                } else {
+                    setPurchaseQuestions([])
+                    setShowQuestions(false)
+                }
+            } else {
+                setPurchaseQuestions([])
+                setShowQuestions(false)
+            }
+        } catch {
+            setPurchaseQuestions([])
+            setShowQuestions(false)
+        }
         setFormSeed((s) => s + 1)
     }, [product?.id])
 
@@ -50,6 +80,16 @@ export default function ProductForm({ product, categories = [] }: { product?: an
                     setShowWarning(Boolean(latest?.purchaseWarning && String(latest.purchaseWarning).trim()))
                     setVisibilityLevel(String(latest?.visibilityLevel ?? -1))
                     setProductImageValue(latest?.image || '')
+                    try {
+                        const raw = (latest as any)?.purchaseQuestions
+                        if (raw) {
+                            const parsed = JSON.parse(raw)
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                setPurchaseQuestions(parsed)
+                                setShowQuestions(true)
+                            }
+                        }
+                    } catch { /* ignore */ }
                     setFormSeed((s) => s + 1)
                 } catch {
                     // ignore
@@ -260,6 +300,69 @@ export default function ProductForm({ product, categories = [] }: { product?: an
                                     className="min-h-[60px]"
                                 />
                                 <p className="text-xs text-muted-foreground">{t('admin.productForm.purchaseWarningHint')}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="showQuestions"
+                                type="checkbox"
+                                checked={showQuestions}
+                                onChange={(e) => {
+                                    setShowQuestions(e.target.checked)
+                                    if (!e.target.checked) setPurchaseQuestions([])
+                                }}
+                                className="h-4 w-4 accent-primary"
+                            />
+                            <Label htmlFor="showQuestions" className="cursor-pointer">{t('admin.productForm.purchaseQuestionsLabel')}</Label>
+                        </div>
+                        {showQuestions && (
+                            <div className="space-y-3">
+                                <input type="hidden" name="purchaseQuestions" value={JSON.stringify(purchaseQuestions)} />
+                                {purchaseQuestions.map((item, idx) => (
+                                    <div key={idx} className="flex items-start gap-2 rounded-md border bg-background/80 p-3">
+                                        <div className="flex-1 space-y-2">
+                                            <Input
+                                                value={item.q}
+                                                onChange={(e) => {
+                                                    const next = [...purchaseQuestions]
+                                                    next[idx] = { ...next[idx], q: e.target.value }
+                                                    setPurchaseQuestions(next)
+                                                }}
+                                                placeholder={t('admin.productForm.questionPlaceholder')}
+                                            />
+                                            <Input
+                                                value={item.a}
+                                                onChange={(e) => {
+                                                    const next = [...purchaseQuestions]
+                                                    next[idx] = { ...next[idx], a: e.target.value }
+                                                    setPurchaseQuestions(next)
+                                                }}
+                                                placeholder={t('admin.productForm.answerPlaceholder')}
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="shrink-0 text-destructive hover:text-destructive"
+                                            onClick={() => setPurchaseQuestions(purchaseQuestions.filter((_, i) => i !== idx))}
+                                        >
+                                            ×
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPurchaseQuestions([...purchaseQuestions, { q: '', a: '' }])}
+                                >
+                                    + {t('admin.productForm.addQuestion')}
+                                </Button>
+                                <p className="text-xs text-muted-foreground">{t('admin.productForm.purchaseQuestionsHint')}</p>
                             </div>
                         )}
                     </div>

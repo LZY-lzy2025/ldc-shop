@@ -37,6 +37,7 @@ interface Product {
     category: string | null
     purchaseLimit?: number | null
     purchaseWarning?: string | null
+    purchaseQuestions?: string | null
     isHot?: boolean | null
     sold?: number
 }
@@ -92,6 +93,10 @@ export function BuyContent({
     const [metaLoading, setMetaLoading] = useState(true)
     const [metaRefreshSeq, setMetaRefreshSeq] = useState(0)
 
+    const [questionAnswers, setQuestionAnswers] = useState<string[]>([])
+    const [questionsVerified, setQuestionsVerified] = useState(false)
+    const [questionError, setQuestionError] = useState(false)
+
     const displayProduct = useMemo(() => {
         if (variants.length > 1 && selectedVariantId) {
             const v = variants.find((x) => x.id === selectedVariantId)
@@ -106,6 +111,7 @@ export function BuyContent({
                     category: product.category,
                     purchaseLimit: v.purchaseLimit,
                     purchaseWarning: v.purchaseWarning ?? null,
+                    purchaseQuestions: v.purchaseQuestions ?? null,
                     isHot: v.isHot ?? false,
                 } satisfies Product
             }
@@ -141,6 +147,40 @@ export function BuyContent({
         }
         return 0
     }, [product, variants, selectedVariantId])
+
+    const questions = useMemo<Array<{ q: string; a: string }>>(() => {
+        try {
+            const raw = displayProduct.purchaseQuestions
+            if (raw) {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed
+            }
+        } catch { /* ignore */ }
+        return []
+    }, [displayProduct.purchaseQuestions])
+
+    useEffect(() => {
+        setQuestionAnswers(questions.map(() => ''))
+        setQuestionsVerified(false)
+        setQuestionError(false)
+    }, [questions])
+
+    const handleVerifyAnswers = () => {
+        const allCorrect = questions.every((q, i) => {
+            const userAnswer = (questionAnswers[i] || '').trim().toLowerCase()
+            const correctAnswer = q.a.trim().toLowerCase()
+            return userAnswer === correctAnswer
+        })
+        if (allCorrect) {
+            setQuestionsVerified(true)
+            setQuestionError(false)
+        } else {
+            setQuestionError(true)
+        }
+    }
+
+    const hasQuestions = questions.length > 0
+    const needsQuestionVerification = hasQuestions && !questionsVerified
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -377,7 +417,44 @@ export function BuyContent({
                                     </div>
                                 </div>
 
-                                {isLoggedIn && hasStock && (
+                                {isLoggedIn && hasStock && needsQuestionVerification && (
+                                    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+                                        <div className="text-[11px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+                                            {t('buy.questionsTitle')}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">{t('buy.questionsHint')}</p>
+                                        {questions.map((q, idx) => (
+                                            <div key={idx} className="space-y-1">
+                                                <label className="text-sm font-medium text-foreground">{q.q}</label>
+                                                <Input
+                                                    value={questionAnswers[idx] || ''}
+                                                    onChange={(e) => {
+                                                        const next = [...questionAnswers]
+                                                        next[idx] = e.target.value
+                                                        setQuestionAnswers(next)
+                                                        setQuestionError(false)
+                                                    }}
+                                                    placeholder={t('buy.answerPlaceholder')}
+                                                    className="rounded-xl"
+                                                />
+                                            </div>
+                                        ))}
+                                        {questionError && (
+                                            <p className="text-sm font-medium text-destructive">{t('buy.questionsWrong')}</p>
+                                        )}
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            className="rounded-xl"
+                                            onClick={handleVerifyAnswers}
+                                            disabled={questionAnswers.some((a) => !a.trim())}
+                                        >
+                                            {t('buy.verifyAnswers')}
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {isLoggedIn && hasStock && !needsQuestionVerification && (
                                     <div className="rounded-2xl border border-border/25 bg-muted/20 p-4">
                                         <div className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                                             {t('buy.modal.total')}
@@ -433,7 +510,11 @@ export function BuyContent({
 
                                 <div className="space-y-3">
                                     {isLoggedIn ? (
-                                        hasStock ? (
+                                        needsQuestionVerification ? (
+                                            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-4 text-amber-800 dark:text-amber-200">
+                                                <p className="text-sm font-medium">{t('buy.answersRequired')}</p>
+                                            </div>
+                                        ) : hasStock ? (
                                             displayProduct.purchaseWarning && !warningConfirmed ? (
                                                 <Dialog open={showWarningDialog} onOpenChange={setShowWarningDialog}>
                                                     <DialogTrigger asChild>
@@ -484,6 +565,7 @@ export function BuyContent({
                                                     quantity={quantity}
                                                     autoOpen={warningConfirmed && !!displayProduct.purchaseWarning}
                                                     emailConfigured={emailConfiguredState}
+                                                    answers={hasQuestions ? questionAnswers : undefined}
                                                 />
                                             )
                                         ) : displayLocked > 0 ? (

@@ -54,6 +54,19 @@ export async function saveProduct(formData: FormData) {
     const visibilityLevelRaw = (formData.get('visibilityLevel') as string | null)?.trim() ?? ''
     const variantGroupId = (formData.get('variantGroupId') as string | null)?.trim() || null
     const variantLabel = (formData.get('variantLabel') as string | null)?.trim() || null
+    const purchaseQuestionsRaw = (formData.get('purchaseQuestions') as string | null)?.trim() || null
+    let purchaseQuestions: string | null = null
+    if (purchaseQuestionsRaw) {
+        try {
+            const parsed = JSON.parse(purchaseQuestionsRaw)
+            if (Array.isArray(parsed)) {
+                const valid = parsed.filter((item: any) => item && typeof item.q === 'string' && item.q.trim() && typeof item.a === 'string' && item.a.trim())
+                purchaseQuestions = valid.length > 0 ? JSON.stringify(valid.map((item: any) => ({ q: item.q.trim(), a: item.a.trim() }))) : null
+            }
+        } catch {
+            // ignore invalid JSON
+        }
+    }
     const parsedVisibility = Number.parseInt(visibilityLevelRaw, 10)
     const visibilityLevel = Number.isFinite(parsedVisibility) ? parsedVisibility : -1
     if (![ -1, 0, 1, 2, 3 ].includes(visibilityLevel)) {
@@ -95,7 +108,8 @@ export async function saveProduct(formData: FormData) {
             isShared,
             visibilityLevel,
             variantGroupId,
-            variantLabel
+            variantLabel,
+            purchaseQuestions
         }).onConflictDoUpdate({
             target: products.id,
             set: {
@@ -111,7 +125,8 @@ export async function saveProduct(formData: FormData) {
                 isShared,
                 visibilityLevel,
                 variantGroupId,
-                variantLabel
+                variantLabel,
+                purchaseQuestions
             }
         })
     }

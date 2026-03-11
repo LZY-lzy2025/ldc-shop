@@ -17,11 +17,12 @@ interface BuyButtonProps {
     productName: string
     disabled?: boolean
     quantity?: number
-    autoOpen?: boolean // Auto-open dialog when mounted (for after warning confirmation)
+    autoOpen?: boolean
     emailConfigured?: boolean
+    answers?: string[]
 }
 
-export function BuyButton({ productId, price, productName, disabled, quantity = 1, autoOpen = false, emailConfigured = false }: BuyButtonProps) {
+export function BuyButton({ productId, price, productName, disabled, quantity = 1, autoOpen = false, emailConfigured = false, answers }: BuyButtonProps) {
     const [loading, setLoading] = useState(false)
     const [open, setOpen] = useState(false)
     const [points, setPoints] = useState(0)
@@ -65,7 +66,7 @@ export function BuyButton({ productId, price, productName, disabled, quantity = 
 
         try {
             setLoading(true)
-            const result = await createOrder(productId, quantity, email, usePoints)
+            const result = await createOrder(productId, quantity, email, usePoints, answers)
 
             if (!result?.success) {
                 const message = result?.error ? t(result.error) : t('common.error')

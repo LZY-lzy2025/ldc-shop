@@ -393,6 +393,7 @@ async function ensureProductsColumns() {
         await safeAddColumn('products', 'review_count', 'INTEGER DEFAULT 0');
         await safeAddColumn('products', 'variant_group_id', 'TEXT');
         await safeAddColumn('products', 'variant_label', 'TEXT');
+        await safeAddColumn('products', 'purchase_questions', 'TEXT');
     });
 }
 
@@ -875,7 +876,13 @@ function groupProductsAsVariants<T extends {
     variantGroupId: string | null;
     sortOrder: number | null;
     createdAt: Date | null;
-}>(rows: T[]): (T & { variantCount?: number; priceMin?: number; priceMax?: number })[] {
+    sold?: number;
+    stock?: number;
+    locked?: number;
+    rating?: number;
+    reviewCount?: number;
+    isHot?: boolean | null;
+}>(rows: T[]): (T & { variantCount?: number; priceMin?: number; priceMax?: number; totalSold?: number; totalStock?: number; totalLocked?: number; totalReviewCount?: number; avgRating?: number; groupHot?: boolean; allVariantIds?: string[] })[] {
     const byGroup = new Map<string, T[]>();
     for (const row of rows) {
         const rawKey = (row.variantGroupId && row.variantGroupId.trim()) || null;
@@ -884,7 +891,7 @@ function groupProductsAsVariants<T extends {
         list.push(row);
         byGroup.set(key, list);
     }
-    const result: (T & { variantCount?: number; priceMin?: number; priceMax?: number })[] = [];
+    const result: (T & { variantCount?: number; priceMin?: number; priceMax?: number; totalSold?: number; totalStock?: number; totalLocked?: number; totalReviewCount?: number; avgRating?: number; groupHot?: boolean; allVariantIds?: string[] })[] = [];
     for (const list of byGroup.values()) {
         const rep = list.slice().sort((a, b) => {
             const soA = a.sortOrder ?? 0;
@@ -898,10 +905,20 @@ function groupProductsAsVariants<T extends {
         const variantCount = list.length;
         const priceMin = prices.length ? Math.min(...prices) : undefined;
         const priceMax = prices.length ? Math.max(...prices) : undefined;
-        result.push({
-            ...rep,
-            ...(variantCount > 1 ? { variantCount, priceMin, priceMax } : {}),
-        });
+
+        if (variantCount > 1) {
+            const totalSold = list.reduce((s, p) => s + (p.sold || 0), 0);
+            const totalStock = list.reduce((s, p) => s + (p.stock || 0), 0);
+            const totalLocked = list.reduce((s, p) => s + (p.locked || 0), 0);
+            const totalReviewCount = list.reduce((s, p) => s + (p.reviewCount || 0), 0);
+            const ratingSum = list.reduce((s, p) => s + (p.rating || 0) * (p.reviewCount || 0), 0);
+            const avgRating = totalReviewCount > 0 ? ratingSum / totalReviewCount : 0;
+            const groupHot = list.some((p) => !!p.isHot);
+            const allVariantIds = list.map((p) => p.id);
+            result.push({ ...rep, variantCount, priceMin, priceMax, totalSold, totalStock, totalLocked, totalReviewCount, avgRating, groupHot, allVariantIds });
+        } else {
+            result.push({ ...rep });
+        }
     }
     result.sort((a, b) => {
         const soA = a.sortOrder ?? 0;
@@ -1006,7 +1023,8 @@ export async function getProduct(id: string, options?: { isLoggedIn?: boolean; t
             rating: sql<number>`COALESCE(${products.rating}, 0)`,
             reviewCount: sql<number>`COALESCE(${products.reviewCount}, 0)`,
             variantGroupId: products.variantGroupId,
-            variantLabel: products.variantLabel
+            variantLabel: products.variantLabel,
+            purchaseQuestions: products.purchaseQuestions
         })
             .from(products)
             .where(and(eq(products.id, id), visibilityCondition(options?.isLoggedIn, options?.trustLevel)))
@@ -1050,6 +1068,7 @@ export type ProductVariantRow = {
     purchaseLimit: number | null;
     isHot: boolean | null;
     purchaseWarning: string | null;
+    purchaseQuestions: string | null;
 };
 
 export async function getProductVariants(
@@ -1072,6 +1091,7 @@ export async function getProductVariants(
             purchaseLimit: products.purchaseLimit,
             isHot: products.isHot,
             purchaseWarning: products.purchaseWarning,
+            purchaseQuestions: products.purchaseQuestions,
         })
             .from(products)
             .where(and(
@@ -1115,6 +1135,7 @@ export async function getProductForAdmin(id: string) {
             visibilityLevel: products.visibilityLevel,
             variantGroupId: products.variantGroupId,
             variantLabel: products.variantLabel,
+            purchaseQuestions: products.purchaseQuestions,
         })
             .from(products)
             .where(eq(products.id, id));
