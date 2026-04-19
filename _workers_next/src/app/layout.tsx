@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { detectServerLocale } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/shared";
 import { DEFAULT_MONO_FONT_STACK, getThemeFontStack, getThemeFontStylesheetHref } from "@/lib/theme-fonts";
+import { AnimeBackgroundLayer } from "@/components/anime-background-layer";
 
 const DEFAULT_TITLE = "LDC Virtual Goods Shop";
 const DEFAULT_DESCRIPTION = "High-quality virtual goods, instant delivery";
@@ -148,6 +149,7 @@ async function RootLayoutContent({
       </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased")}>
         <Providers themeColor={themeColor} initialLocale={initialLocale} currencyUnit={currencyUnit}>
+          <AnimeBackgroundLayer />
           <div className="relative flex min-h-screen flex-col">
             <SiteHeader />
             <div className="flex-1 pb-16 md:pb-0">{children}</div>
