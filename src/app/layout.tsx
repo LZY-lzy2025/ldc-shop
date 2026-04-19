@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { getSetting } from "@/lib/db/queries";
-import { getAnimeBackgroundUrl } from "@/lib/anime-background";
+import { AnimeBackgroundLayer } from "@/components/anime-background-layer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,16 +38,12 @@ export default async function RootLayout({
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
           <div className="relative flex min-h-screen flex-col">
-            {backgroundImageUrl && (
-              <div
-                className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-20"
-                style={{ backgroundImage: `url(${backgroundImageUrl})` }}
-                aria-hidden="true"
-              />
-            )}
-            <SiteHeader />
-            <div className="flex-1">{children}</div>
-            <SiteFooter />
+            <AnimeBackgroundLayer />
+            <div className="relative z-10 flex min-h-screen flex-col">
+              <SiteHeader />
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
+            </div>
           </div>
         </Providers>
       </body>
