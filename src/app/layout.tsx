@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { getSetting } from "@/lib/db/queries";
+import { getAnimeBackgroundUrl } from "@/lib/anime-background";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,16 +26,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const backgroundImageUrl = await getAnimeBackgroundUrl();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
           <div className="relative flex min-h-screen flex-col">
+            {backgroundImageUrl && (
+              <div
+                className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-20"
+                style={{ backgroundImage: `url(${backgroundImageUrl})` }}
+                aria-hidden="true"
+              />
+            )}
             <SiteHeader />
             <div className="flex-1">{children}</div>
             <SiteFooter />
