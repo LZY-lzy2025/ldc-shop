@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import { detectServerLocale } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/shared";
 import { DEFAULT_MONO_FONT_STACK, getThemeFontStack, getThemeFontStylesheetHref } from "@/lib/theme-fonts";
+import { AnimeBackgroundLayer } from "@/components/anime-background-layer";
 
 const DEFAULT_TITLE = "LDC Virtual Goods Shop";
 const DEFAULT_DESCRIPTION = "High-quality virtual goods, instant delivery";
@@ -146,8 +147,12 @@ async function RootLayoutContent({
           }}
         />
       </head>
-      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
+      <body
+        className={cn("min-h-screen bg-background font-sans antialiased has-anime-bg")}
+        style={{ "--anime-bg-image": 'url("/anime-bg-fallback.svg")' } as React.CSSProperties}
+      >
         <Providers themeColor={themeColor} initialLocale={initialLocale} currencyUnit={currencyUnit}>
+          <AnimeBackgroundLayer />
           <div className="relative flex min-h-screen flex-col">
             <SiteHeader />
             <div className="flex-1 pb-16 md:pb-0">{children}</div>
@@ -163,7 +168,10 @@ async function RootLayoutContent({
 function RootLayoutFallback() {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
+      <body
+        className={cn("min-h-screen bg-background font-sans antialiased has-anime-bg")}
+        style={{ "--anime-bg-image": 'url("/anime-bg-fallback.svg")' } as React.CSSProperties}
+      >
         <div className="relative flex min-h-screen flex-col">
           <div className="h-16 border-b border-border/40 bg-background/70" />
           <div className="flex-1" />
