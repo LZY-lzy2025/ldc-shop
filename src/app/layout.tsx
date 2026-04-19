@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import { getSetting } from "@/lib/db/queries";
+import { AnimeBackgroundLayer } from "@/components/anime-background-layer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
+          <AnimeBackgroundLayer />
           <div className="relative flex min-h-screen flex-col">
             <SiteHeader />
             <div className="flex-1">{children}</div>
