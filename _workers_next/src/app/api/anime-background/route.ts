@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 const DEFAULT_REMOTE_SOURCES = [
+  "https://www.loliapi.com/acg/",
   "https://api.yimian.xyz/img?type=moe",
   "https://www.dmoe.cc/random.php",
   "https://api.vvhan.com/api/acgimg",
@@ -20,29 +21,13 @@ function parseSources() {
   return parsed.length > 0 ? parsed : DEFAULT_REMOTE_SOURCES;
 }
 
-async function canReach(url: string): Promise<boolean> {
-  try {
-    const response = await fetch(url, {
-      method: "HEAD",
-      redirect: "follow",
-      cache: "no-store",
-      signal: AbortSignal.timeout(3000),
-    });
-
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
 export async function GET(request: Request) {
   const sources = parseSources();
-
-  for (const source of sources) {
-    if (await canReach(source)) {
-      const separator = source.includes("?") ? "&" : "?";
-      return NextResponse.redirect(`${source}${separator}t=${Date.now()}`);
-    }
+  if (sources.length > 0) {
+    const index = Math.floor(Math.random() * sources.length);
+    const source = sources[index];
+    const separator = source.includes("?") ? "&" : "?";
+    return NextResponse.redirect(`${source}${separator}t=${Date.now()}`);
   }
 
   return NextResponse.redirect(new URL(LOCAL_FALLBACK, request.url));
