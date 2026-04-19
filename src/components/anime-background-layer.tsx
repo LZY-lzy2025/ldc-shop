@@ -2,11 +2,8 @@
 
 import { useEffect } from "react";
 
-const DEFAULT_SOURCES = [
-  "https://api.yimian.xyz/img?type=moe",
-  "https://www.dmoe.cc/random.php",
-  "https://api.vvhan.com/api/acgimg",
-];
+const DEFAULT_SOURCES = ["/api/anime-background"];
+const LOCAL_FALLBACK = "/anime-bg-fallback.svg";
 
 function parseSourceList() {
   const raw = process.env.NEXT_PUBLIC_ANIME_BACKGROUND_SOURCES;
@@ -15,12 +12,12 @@ function parseSourceList() {
   const parsed = raw
     .split(",")
     .map((item) => item.trim())
-    .filter((item) => /^https?:\/\//i.test(item));
+    .filter((item) => /^(https?:\/\/|\/)/i.test(item));
 
   return parsed.length > 0 ? parsed : DEFAULT_SOURCES;
 }
 
-function loadImageWithTimeout(src: string, timeoutMs = 4000): Promise<string> {
+function loadImageWithTimeout(src: string, timeoutMs = 6000): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const timer = window.setTimeout(() => {
@@ -49,13 +46,15 @@ export function AnimeBackgroundLayer() {
     const body = document.body;
     const sources = parseSourceList();
 
+    body.classList.add("has-anime-bg");
+    body.style.setProperty("--anime-bg-image", `url("${LOCAL_FALLBACK}")`);
+
     const applyBackground = async () => {
       for (const source of sources) {
         try {
           const usableUrl = await loadImageWithTimeout(source);
           if (cancelled) return;
 
-          body.classList.add("has-anime-bg");
           body.style.setProperty("--anime-bg-image", `url("${usableUrl}")`);
           return;
         } catch {
