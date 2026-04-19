@@ -189,6 +189,22 @@
     @apply bg-background text-foreground;
   }
 
+  body.has-anime-bg {
+    background-image:
+      linear-gradient(to bottom, oklch(0.99 0 0 / 0.82), oklch(0.99 0 0 / 0.9)),
+      var(--anime-bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
+
+  .dark body.has-anime-bg {
+    background-image:
+      linear-gradient(to bottom, oklch(0.12 0.02 270 / 0.7), oklch(0.12 0.02 270 / 0.82)),
+      var(--anime-bg-image);
+  }
+
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
