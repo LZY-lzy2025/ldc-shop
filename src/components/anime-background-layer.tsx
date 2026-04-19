@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 
 const DEFAULT_SOURCES = [
   "https://api.yimian.xyz/img?type=moe",
@@ -44,40 +44,34 @@ function loadImageWithTimeout(src: string, timeoutMs = 4000): Promise<string> {
 }
 
 export function AnimeBackgroundLayer() {
-  const [activeUrl, setActiveUrl] = useState<string | null>(null);
-  const sources = useMemo(() => parseSourceList(), []);
-
   useEffect(() => {
     let cancelled = false;
+    const body = document.body;
+    const sources = parseSourceList();
 
-    const tryLoad = async () => {
+    const applyBackground = async () => {
       for (const source of sources) {
         try {
           const usableUrl = await loadImageWithTimeout(source);
-          if (!cancelled) {
-            setActiveUrl(usableUrl);
-          }
+          if (cancelled) return;
+
+          body.classList.add("has-anime-bg");
+          body.style.setProperty("--anime-bg-image", `url("${usableUrl}")`);
           return;
         } catch {
-          // Try next source
+          // continue trying fallback sources
         }
       }
     };
 
-    void tryLoad();
+    void applyBackground();
 
     return () => {
       cancelled = true;
+      body.classList.remove("has-anime-bg");
+      body.style.removeProperty("--anime-bg-image");
     };
-  }, [sources]);
+  }, []);
 
-  if (!activeUrl) return null;
-
-  return (
-    <div
-      className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-20"
-      style={{ backgroundImage: `url(${activeUrl})` }}
-      aria-hidden="true"
-    />
-  );
+  return null;
 }

@@ -37,6 +37,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
+          <AnimeBackgroundLayer />
           <div className="relative flex min-h-screen flex-col">
             <AnimeBackgroundLayer />
             <div className="relative z-10 flex min-h-screen flex-col">
